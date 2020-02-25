@@ -6,7 +6,8 @@ package de.kramhal.coffeebutts
 import de.kramhal.coffeebutts.model.Coffee
 import de.kramhal.coffeebutts.model.Order
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.produce
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.flow.*
 import mu.KotlinLogging
 import org.springframework.http.MediaType
@@ -36,21 +37,12 @@ class CoffeeServices {
     }
 
     @GetMapping(value = ["/echo"], produces = [MediaType.APPLICATION_STREAM_JSON_VALUE])
-    fun echo(@RequestParam(value = "name", defaultValue = "World") name: String): Flow<Echo> {
-        return flow {
-            coroutineScope {
-                val channel = produce<Echo> {
-                    val deffereds = (5 downTo 0).map {
-                        GlobalScope.async(Dispatchers.IO) { calculateEcho((Math.random()*1000*it).toLong()) }
-                    }
-                }
-                channel.consumeAsFlow()
-            }
+    suspend fun echo(@RequestParam(value = "name", defaultValue = "World") name: String): Flow<Echo> {
+        val channel = Channel<Echo>()
+        (5 downTo 0).map {
+            GlobalScope.async { channel.send(calculateEcho((Math.random() * 1000 * it).toLong())) }
         }
-//        val deffereds = (5 downTo 0).map {
-//            GlobalScope.async(Dispatchers.IO) { calculateEcho((Math.random()*1000*it).toLong()) }
-//        }
-//        return runBlocking { deffereds.asFlow().map { it.await() } }
+        return flow { channel.consumeEach { emit(it) } } //  channel.consumeAsFlow()
     }
 
 }
