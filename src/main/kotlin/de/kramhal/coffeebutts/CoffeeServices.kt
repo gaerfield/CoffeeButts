@@ -5,14 +5,9 @@ package de.kramhal.coffeebutts
 
 import de.kramhal.coffeebutts.model.Coffee
 import de.kramhal.coffeebutts.model.Order
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.flow.*
-import mu.KotlinLogging
-import org.springframework.http.MediaType
-import org.springframework.web.bind.annotation.*
-import java.util.concurrent.atomic.AtomicLong
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class CoffeeServices {
@@ -23,26 +18,4 @@ class CoffeeServices {
     fun placeOrder(@RequestBody order: CoffeeOrder) {
         Order(Coffee(order.type))
     }
-
-    private val template = "Hello, %s!"
-    private val counter = AtomicLong()
-    private val log = KotlinLogging.logger {}
-
-    data class Echo(val id: Long, val content: String)
-
-    suspend fun calculateEcho(millis: Long): Echo {
-        val id = counter.getAndIncrement()
-        delay(millis)
-        return Echo(id, String.format(template, millis)).also { println(it) }
-    }
-
-    @GetMapping(value = ["/echo"], produces = [MediaType.APPLICATION_STREAM_JSON_VALUE])
-    suspend fun echo(@RequestParam(value = "name", defaultValue = "World") name: String): Flow<Echo> {
-        val channel = Channel<Echo>()
-        (5 downTo 0).map {
-            GlobalScope.async { channel.send(calculateEcho((Math.random() * 1000 * it).toLong())) }
-        }
-        return flow { channel.consumeEach { emit(it) } } //  channel.consumeAsFlow()
-    }
-
 }
