@@ -5,12 +5,29 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.flow.*
 import mu.KotlinLogging
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
+import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.reactive.function.server.ServerRequest
+import org.springframework.web.reactive.function.server.ServerResponse
+import org.springframework.web.reactive.function.server.bodyAndAwait
+import org.springframework.web.reactive.function.server.router
 import java.util.concurrent.atomic.AtomicLong
 
+@Configuration
+class EchoRoutes(
+        private val echoServices: EchoServices
+) {
+
+    @Bean
+    fun echoRouter() = router {
+        GET("/echo1") { echoServices::echo12 }
+    }
+}
 //val echoHandler = EchoServices()
 //val route = coRouter {
 //    GET("/person/{id}", echoHandler::echo1)
@@ -18,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong
 //    POST("/person", handler::createPerson)
 //}
 
-@RestController
+@Component
 class EchoServices {
     private val template = "Hello, %s!"
     private val counter = AtomicLong(1)
@@ -34,8 +51,14 @@ class EchoServices {
         return Echo(id, String.format(template, "${delay/1000}")).also { println(it) }
     }
 
-    @GetMapping(value = ["/echo1"], produces = [MediaType.APPLICATION_STREAM_JSON_VALUE])
-    suspend fun echo1(@RequestParam(value = "name", defaultValue = "World") name: String): Flow<Echo> {
+    suspend fun echo12(request: ServerRequest): ServerResponse {
+        return ServerResponse.ok()
+                    .contentType(MediaType.APPLICATION_STREAM_JSON)
+                    .bodyAndAwait( echo1() )
+    }
+
+
+    fun echo1(): Flow<Echo> {
         val channel = Channel<Echo>()
         val deffereds = (1..5).map {
             GlobalScope.async { channel.send(calculateEcho(it)) }
