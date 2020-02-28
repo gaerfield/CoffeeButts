@@ -8,10 +8,8 @@ import de.kramhal.coffeebutts.model.Order
 import de.kramhal.coffeebutts.repositories.OrderRepository
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/coffee")
@@ -19,14 +17,12 @@ internal class CoffeeOrderingService(
         private val orderRepository: OrderRepository
 ) {
 
-    data class CoffeeOrder(val type: Coffee.Type)
+    data class CoffeeOrder(val type: Coffee.Type = Coffee.Type.Cappucino)
 
-    @GetMapping("/orders1")
-    suspend fun placeOrder(): String {
-        val order = Order(Coffee(Coffee.Type.Cappucino))
-        println(order)
-        return orderRepository.save(order).awaitSingle().id
-    }
+    @PostMapping("/orders")
+    @ResponseStatus(HttpStatus.CREATED)
+    suspend fun placeOrder(@RequestBody order: CoffeeOrder) =
+        orderRepository.save(Order(Coffee(order.type))).awaitSingle().id
 
 
     @GetMapping("/orders")
