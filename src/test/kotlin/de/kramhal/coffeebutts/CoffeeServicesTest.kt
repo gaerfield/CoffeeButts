@@ -9,11 +9,7 @@ import de.kramhal.coffeebutts.Producer.sequential
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.channels.produce
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.*
 import kotlin.system.measureTimeMillis
 
 /**
@@ -95,20 +91,11 @@ class Flows(
 ){
     private suspend fun producer() = when(producer) {
         sequential -> flow { (1..10).forEach { emit(longRunningTask(it)) } }
-        concurrent -> coroutineScope { (1..10).map { async { longRunningTask(it) } }.awaitAll().asFlow() }
+        concurrent -> channelFlow { (1..10).map { launch { send(longRunningTask(it)) } } }
     }
     private suspend fun consumer(ints: Flow<Int>) = when(consumer) {
-        fast -> ints.collect { println(longRunningTask(it)) }
-        slow -> ints.collect { println(it) }
-    }
-
-    private fun <T> Flow<T>.buffer(size: Int = 0): Flow<T> = flow {
-        coroutineScope {
-            val channel = produce(capacity = size) {
-                collect { send(it) }
-            }
-            channel.consumeEach { emit(it) }
-        }
+        slow -> ints.collect { println(longRunningTask(it)) }
+        fast -> ints.collect { println(it) }
     }
 
     suspend fun executionTime() = measureTimeMillis {
@@ -123,19 +110,20 @@ class Flows(
 fun main() {
     println(
         """
-            Channels with concurrent slow producer:
-              - slow Consumer:              ${runBlocking { Channels(consumer = slow).executionTime() }}
-              - fast Consumer:              ${runBlocking { Channels(consumer = fast).executionTime() }}
-            Flows with sequential slow producer:
-              - fast Consumer:              ${runBlocking { Flows(producer = sequential, consumer = fast, flowOperator = none).executionTime() }}
-              - slow Consumer:              ${runBlocking { Flows(producer = sequential, consumer = slow, flowOperator = none).executionTime() }}
-              - operator and slow Consumer: ${runBlocking { Flows(producer = sequential, consumer = fast, flowOperator = buffered).executionTime() }}
-              - operator and fast Consumer: ${runBlocking { Flows(producer = sequential, consumer = slow, flowOperator = buffered).executionTime() }}
-            Flows with concurrent slow producer:
-              - slow Consumer:              ${runBlocking { Flows(producer = concurrent, consumer = fast, flowOperator = none).executionTime() }}
-              - fast Consumer:              ${runBlocking { Flows(producer = concurrent, consumer = slow, flowOperator = none).executionTime() }}
-              - operator and slow Consumer: ${runBlocking { Flows(producer = concurrent, consumer = fast, flowOperator = buffered).executionTime() }}
-              - operator and fast Consumer: ${runBlocking { Flows(producer = concurrent, consumer = slow, flowOperator = buffered).executionTime() }}
+            Channels with concurrent slow producer and:
+              - slow Consumer:                                 ${runBlocking { Channels(consumer = slow).executionTime() }}
+              - fast Consumer:                                 ${runBlocking { Channels(consumer = fast).executionTime() }}
+            Flows
+              - sequential slow producer and:
+                - slow consumer                       ${runBlocking { Flows(producer = sequential, consumer = slow, flowOperator = none).executionTime() }}
+                - slow consumer running concurrently  ${runBlocking { Flows(producer = sequential, consumer = slow, flowOperator = buffered).executionTime() }}
+                - fast consumer                       ${runBlocking { Flows(producer = sequential, consumer = fast, flowOperator = none).executionTime() }}
+                - fast consumer running concurrently  ${runBlocking { Flows(producer = sequential, consumer = fast, flowOperator = buffered).executionTime() }}
+              - concurrent slow producer and:
+                - slow consumer                       ${runBlocking { Flows(producer = concurrent, consumer = slow, flowOperator = none).executionTime() }}
+                - slow consumer running concurrently  ${runBlocking { Flows(producer = concurrent, consumer = slow, flowOperator = buffered).executionTime() }}
+                - fast consumer                       ${runBlocking { Flows(producer = concurrent, consumer = fast, flowOperator = none).executionTime() }}
+                - fast consumer running concurrently  ${runBlocking { Flows(producer = concurrent, consumer = fast, flowOperator = buffered).executionTime() }}
         """.trimIndent()
     )
 }

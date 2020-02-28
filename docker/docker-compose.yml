@@ -1,0 +1,22 @@
+version: '3.1'
+
+services:
+  mongo-express:
+    image: mongo-express:latest
+    ports:
+      - 9000:8081
+    environment:
+    #   ME_CONFIG_BASICAUTH_PASSWORD: p4fr33!
+    #   ME_CONFIG_BASICAUTH_USERNAME: restheart
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: jCkgHt27ZysY6s
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:4.2.2
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: jCkgHt27ZysY6s

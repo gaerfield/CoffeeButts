@@ -75,10 +75,14 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     // implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
-    // testImplementation("io.projectreactor:reactor-test")
+    testImplementation("io.projectreactor:reactor-test")
 
     // --- persistence
-    // implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
+    // implementation("org.springframework.data:spring-data-r2dbc:1.0.0.RELEASE")
+    // implementation("io.r2dbc:r2dbc-h2:0.8.2.RELEASE")
+    // runtimeOnly("com.h2database:h2:1.4.200")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 
     // --- documentation
     implementation("org.springdoc:springdoc-openapi-webflux-ui:1.2.32")
