@@ -85,7 +85,8 @@ dependencies {
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 
     // --- documentation
-    implementation("org.springdoc:springdoc-openapi-webflux-ui:1.2.32")
+    // TODO activate as soon, as [springdoc-openapi#159](https://github.com/springdoc/springdoc-openapi/issues/159) is fixed
+    // implementation("org.springdoc:springdoc-openapi-webflux-ui:1.2.32")
 }
 
 springBoot {

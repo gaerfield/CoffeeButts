@@ -3,7 +3,9 @@
  */
 package de.kramhal.coffeebutts.web
 
-import de.kramhal.coffeebutts.model.Coffee
+import de.kramhal.coffeebutts.infrastructure.EventBus
+import de.kramhal.coffeebutts.model.*
+import de.kramhal.coffeebutts.model.FrontDesk
 import de.kramhal.coffeebutts.model.Order
 import de.kramhal.coffeebutts.repositories.OrderRepository
 import kotlinx.coroutines.reactive.asFlow
@@ -14,22 +16,22 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/coffee")
 internal class CoffeeOrderingService(
-        private val orderRepository: OrderRepository
+        private val frontDesk: FrontDesk
 ) {
 
-    data class CoffeeOrder(val type: Coffee.Type = Coffee.Type.Cappucino)
+    data class OrderCoffee(val type: List<Coffee.Type>)
 
     @PostMapping("/orders")
     @ResponseStatus(HttpStatus.CREATED)
-    suspend fun placeOrder(@RequestBody order: CoffeeOrder) =
-        orderRepository.save(Order(Coffee(order.type))).awaitSingle().id
+    suspend fun placeOrder(@RequestBody order: OrderCoffee) =
+            frontDesk.placeOrder(order.type)
 
 
-    @GetMapping("/orders")
-    suspend fun allOrders() =
-            orderRepository.findAll().asFlow()
-
-    @GetMapping("/orders/{id}")
-    suspend fun byId(@PathVariable id: String) =
-            orderRepository.findById(id).awaitSingle()
+//    @GetMapping("/orders")
+//    suspend fun allOrders() =
+//            orderRepository.findAll().asFlow()
+//
+//    @GetMapping("/orders/{id}")
+//    suspend fun byId(@PathVariable id: OrderId) =
+//            orderRepository.findById(id).awaitSingle()
 }
