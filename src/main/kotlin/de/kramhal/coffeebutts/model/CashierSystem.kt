@@ -9,6 +9,7 @@ import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.data.annotation.Id
+import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.stereotype.Component
 import java.io.Serializable
 import java.util.*
@@ -37,13 +38,16 @@ internal class CashierSystem(
 
     suspend fun payOrder(orderId: OrderId) {
         val invoice = invoiceRepository.findByOrderId(orderId).awaitSingle()
-        EventBus.send(invoice.pay())
+        val paid = invoice.pay()
+        invoiceRepository.save(invoice).awaitSingle()
+        EventBus.send(paid)
     }
 }
 
 data class InvoiceId(val id: String = UUID.randomUUID().toString()) : Serializable
 
 @ExperimentalCoroutinesApi
+@Document
 internal class Invoice(
         val orderId: OrderId,
         @Id val invoiceId: InvoiceId = InvoiceId()

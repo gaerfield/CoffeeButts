@@ -1,0 +1,26 @@
+POST http://localhost:8080/coffee/orders
+Content-Type: application/json
+
+{
+    "requestedCoffees": [
+        "LatteMachiatto", "Cappucino", "Cappucino", "Cappucino", "Espresso"
+    ]
+}
+
+> {%
+ client.global.set("orderId", response.body.orderId.id);
+ client.log(client.global.get("orderId"));
+%}
+
+
+###
+
+POST http://localhost:8080/coffee/orders/pay/{{orderId}}
+
+###
+
+GET http://localhost:8080/coffee/orders/{{orderId}}
+
+<> 2020-03-10T041356.404.json
+
+###

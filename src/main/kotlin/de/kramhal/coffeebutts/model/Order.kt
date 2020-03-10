@@ -13,7 +13,7 @@ import kotlinx.coroutines.reactive.awaitSingle
 import mu.KotlinLogging
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
-import org.springframework.data.annotation.Version
+import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.stereotype.Component
 import java.io.Serializable
 import java.util.*
@@ -51,12 +51,14 @@ internal class FrontDesk(
     suspend fun markPayment(paid: Invoice.Paid) {
         val order = orderRepository.findById(paid.orderId).awaitSingle()
         order.wasPaid()
+        orderRepository.save(order).awaitSingle()
         log.info { "$order was paid" }
     }
 
     private suspend fun markFinished(processed: Barista.Processed) {
         val order = orderRepository.findById(processed.orderId).awaitSingle()
         order.wasProcessed()
+        orderRepository.save(order).awaitSingle()
         log.info { "${order.id} is ready for pick up (if not already)." }
     }
 
@@ -68,8 +70,9 @@ internal class FrontDesk(
             log.info { "Please pay first!" }
             return emptyFlow()
         }
-        return order.coffees.asFlow()
-            .also { flow -> flow.onCompletion { EventBus.send(Delivered(order.id)) } }
+        return emptyFlow()
+//        return order.coffees.asFlow()
+//            .also { flow -> flow.onCompletion { EventBus.send(Delivered(order.id)) } }
     }
 }
 
@@ -80,6 +83,7 @@ internal class Coffee(
 }
 
 @ExperimentalCoroutinesApi
+@Document
 internal data class Order(
         val requestedCoffees: List<Coffee.Type>,
         @Id val id: OrderId = OrderId()
