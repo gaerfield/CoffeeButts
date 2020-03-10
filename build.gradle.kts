@@ -86,7 +86,7 @@ dependencies {
 
     // --- documentation
     // TODO activate as soon, as [springdoc-openapi#159](https://github.com/springdoc/springdoc-openapi/issues/159) is fixed
-    // implementation("org.springdoc:springdoc-openapi-webflux-ui:1.2.32")
+     implementation("org.springdoc:springdoc-openapi-webflux-ui:1.2.32")
 }
 
 springBoot {

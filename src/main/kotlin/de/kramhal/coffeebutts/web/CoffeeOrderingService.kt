@@ -6,26 +6,46 @@ package de.kramhal.coffeebutts.web
 import de.kramhal.coffeebutts.infrastructure.EventBus
 import de.kramhal.coffeebutts.model.*
 import de.kramhal.coffeebutts.model.FrontDesk
-import de.kramhal.coffeebutts.model.Order
-import de.kramhal.coffeebutts.repositories.OrderRepository
-import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactive.awaitSingle
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.*
+import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
+@ExperimentalCoroutinesApi
 @RestController
 @RequestMapping("/coffee")
 internal class CoffeeOrderingService(
-        private val frontDesk: FrontDesk
+        private val frontDesk: FrontDesk,
+        private val cashierSystem: CashierSystem
 ) {
 
-    data class OrderCoffee(val type: List<Coffee.Type>)
+    data class OrderCoffee(val requestedCoffees: List<Coffee.Type>)
+    data class Bill(val orderId: OrderId)
 
+    @FlowPreview
     @PostMapping("/orders")
     @ResponseStatus(HttpStatus.CREATED)
-    suspend fun placeOrder(@RequestBody order: OrderCoffee) =
-            frontDesk.placeOrder(order.type)
+    suspend fun placeOrder(@RequestBody order: OrderCoffee): Bill {
+        val listener = EventBus.on<CashierSystem.Invoiced>()
+        val orderId = frontDesk.placeOrder(order.requestedCoffees)
 
+        return listener.consumeAsFlow()
+                .first { it.invoice.orderId == orderId }
+                .let { Bill(it.invoice.orderId) }
+    }
+
+    @PostMapping("/orders/pay/{orderId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    suspend fun pay(@PathVariable orderId: OrderId) {
+        cashierSystem.payOrder(orderId)
+    }
+
+    @GetMapping("/orders/coffees/{orderId}")
+    suspend fun receiveCoffees(@PathVariable orderId: OrderId) {
+        frontDesk.receiveCoffees(orderId)
+    }
 
 //    @GetMapping("/orders")
 //    suspend fun allOrders() =
