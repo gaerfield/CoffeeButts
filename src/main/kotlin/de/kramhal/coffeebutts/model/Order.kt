@@ -6,6 +6,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.BroadcastChannel
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -16,6 +17,7 @@ import org.springframework.data.annotation.Transient
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.stereotype.Component
 import java.io.Serializable
+import java.lang.IllegalStateException
 import java.util.*
 
 // TODO make this an inline-class as soon as https://jira.spring.io/browse/DATACMNS-1517 is fixed
@@ -31,6 +33,7 @@ internal class FrontDesk(
 
     private val log = KotlinLogging.logger {}
 
+    private val ordersInProcess = mutableMapOf<OrderId,Order>()
     init {
         GlobalScope.launch {
             EventBus.on<Invoice.Paid>().consumeEach { markPayment(it) }
@@ -43,6 +46,7 @@ internal class FrontDesk(
 
     suspend fun placeOrder(type: List<Coffee.Type>): OrderId {
         val order = orderRepository.save(Order(type)).awaitSingle()
+        ordersInProcess[order.id] = order
         GlobalScope.launch { EventBus.send(Ordered(order)) }
         return order.id
     }
@@ -65,14 +69,22 @@ internal class FrontDesk(
     class Delivered(orderId: OrderId) : EventBus.Event
 
     suspend fun receiveCoffees(orderId: OrderId): Flow<Coffee> {
-        val order = orderRepository.findById(orderId).awaitSingle()
-        if(!order.isDeliverable()) {
-            log.info { "Please pay first!" }
+        val order = ordersInProcess[orderId]
+        if(order == null) {
+            log.info { "order [$orderId] was already delivered." }
             return emptyFlow()
         }
-        return emptyFlow()
-//        return order.coffees.asFlow()
-//            .also { flow -> flow.onCompletion { EventBus.send(Delivered(order.id)) } }
+//        if(!order.isDeliverable()) {
+//            log.info { "Please pay first!" }
+//            return emptyFlow()
+//        }
+        return with(order.coffees) {
+            if(this == null) {
+                log.info { "Barista has not started yet" }
+                return@with emptyFlow<Coffee>()
+            }
+            consumeAsFlow()
+        }
     }
 }
 
@@ -93,10 +105,10 @@ internal data class Order(
     var hasBeenProcessed: Boolean = false
         private set
     @Transient
-    val coffees= BroadcastChannel<Coffee>(requestedCoffees.size)
+    var coffees : ReceiveChannel<Coffee>? = null
 
     fun wasPaid() { hasBeenPaid = true }
     fun isDeliverable() = hasBeenPaid
 
-    fun wasProcessed() { hasBeenProcessed = true; coffees.close() }
+    fun wasProcessed() { hasBeenProcessed = true }
 }

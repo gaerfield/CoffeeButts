@@ -5,6 +5,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component
 @Component
 internal class Barista {
 
-    class Processing(val orderId: OrderId) : EventBus.Event
+    class Processing(val order: Order) : EventBus.Event
     class Processed(val orderId: OrderId) : EventBus.Event
 
     private val log = KotlinLogging.logger {}
@@ -27,12 +28,14 @@ internal class Barista {
     }
 
     private suspend fun processOrder(order: Order) {
+        EventBus.send(Processing(order))
         // validiere ... genügend Milch?
-        EventBus.send(Processing(order.id))
-        order.requestedCoffees.forEach {
-            log.info { "${order.id}: Creating $it" }
-            delay(1000)
-            order.coffees.send(Coffee(it))
+        order.coffees = GlobalScope.produce {
+            order.requestedCoffees.forEach {
+                log.info { "${order.id}: Creating $it" }
+                delay(2500)
+                send(Coffee(it))
+            }
         }
         EventBus.send(Processed(order.id))
     }

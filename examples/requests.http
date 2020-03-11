@@ -19,8 +19,12 @@ POST http://localhost:8080/coffee/orders/pay/{{orderId}}
 
 ###
 
-GET http://localhost:8080/coffee/orders/{{orderId}}
+GET http://localhost:8080/coffee/orders/coffees/{{orderId}}
 
 <> 2020-03-10T041356.404.json
+
+###
+
+GET http://localhost:8080/echo/4
 
 ###

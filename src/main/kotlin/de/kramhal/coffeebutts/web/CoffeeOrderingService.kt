@@ -8,9 +8,11 @@ import de.kramhal.coffeebutts.model.*
 import de.kramhal.coffeebutts.model.FrontDesk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
 
 @ExperimentalCoroutinesApi
@@ -23,6 +25,8 @@ internal class CoffeeOrderingService(
 
     data class OrderCoffee(val requestedCoffees: List<Coffee.Type>)
     data class Bill(val orderId: OrderId)
+
+    private val log = KotlinLogging.logger {}
 
     @FlowPreview
     @PostMapping("/orders")
@@ -42,9 +46,9 @@ internal class CoffeeOrderingService(
         cashierSystem.payOrder(orderId)
     }
 
-    @GetMapping("/orders/coffees/{orderId}")
-    suspend fun receiveCoffees(@PathVariable orderId: OrderId) {
-        frontDesk.receiveCoffees(orderId)
+    @GetMapping("/orders/coffees/{orderId}", produces = [MediaType.APPLICATION_STREAM_JSON_VALUE])
+    suspend fun receiveCoffees(@PathVariable orderId: OrderId): Flow<Coffee> {
+        return frontDesk.receiveCoffees(orderId)
     }
 
 //    @GetMapping("/orders")
