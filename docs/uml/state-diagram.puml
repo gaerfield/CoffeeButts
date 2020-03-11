@@ -1,0 +1,24 @@
+state ordered
+state delivered
+
+state Bill {
+  state invoiced
+  state paid
+  invoiced --> paid : paying
+}
+
+state Barista {
+  state scheduled
+  state processing
+  state processed
+
+  scheduled --> processing : begin making coffee
+  processing --> processed : all coffees done
+  processed --> delivered
+}
+
+[*] --> ordered : order
+ordered --> invoiced : request payment
+paid --> delivered
+ordered --> scheduled : issue Order
+delivered --> [*]

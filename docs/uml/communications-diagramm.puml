@@ -1,0 +1,16 @@
+actor customer
+
+customer --> frontdesk : order-command
+frontdesk --> barista : ordered
+
+== cashing customer ==
+frontdesk --> customer : invoicing
+customer --> frontdesk : paying
+
+== producing coffees ==
+
+barista --> barista : processing
+barista --> frontdesk : coffees
+frontdesk --> customer : coffees\n(only if paid)
+
+barista --> frontdesk : processed

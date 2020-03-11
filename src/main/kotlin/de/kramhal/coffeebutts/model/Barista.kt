@@ -28,15 +28,15 @@ internal class Barista {
     }
 
     private suspend fun processOrder(order: Order) {
-        EventBus.send(Processing(order))
         // validiere ... genügend Milch?
-        order.coffees = GlobalScope.produce {
+        order.coffees = GlobalScope.produce(capacity = order.requestedCoffees.size) {
+            EventBus.send(Processing(order))
             order.requestedCoffees.forEach {
                 log.info { "${order.id}: Creating $it" }
                 delay(2500)
                 send(Coffee(it))
             }
+            EventBus.send(Processed(order.id))
         }
-        EventBus.send(Processed(order.id))
     }
 }
