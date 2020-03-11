@@ -1,3 +1,4 @@
+@startuml
 actor customer
 
 customer --> frontdesk : order-command
@@ -14,3 +15,4 @@ barista --> frontdesk : coffees
 frontdesk --> customer : coffees\n(only if paid)
 
 barista --> frontdesk : processed
+@enduml

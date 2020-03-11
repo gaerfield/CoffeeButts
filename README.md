@@ -56,7 +56,7 @@ Because the Event-Storming has happened rudimentary scribbled on a blank page, I
 
 The communication between all components should something like this
 
-![communications-diagram](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/gaerfield/CoffeeButts/master/doc/uml/communications-diagram.puml)
+![communications-diagram](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/gaerfield/CoffeeButts/master/docs/uml/communications.puml)
 
 Remember: the cashing of the customer and the creation of coffees happens asynchronously.
 
@@ -64,7 +64,7 @@ Remember: the cashing of the customer and the creation of coffees happens asynch
 
 Besides the components the following states
 
-![state-diagram](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/gaerfield/CoffeeButts/master/doc/uml/state-diagram.puml)
+![state-diagram](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/gaerfield/CoffeeButts/master/docs/uml/states.puml)
 
 ## Problems during implementation
 
