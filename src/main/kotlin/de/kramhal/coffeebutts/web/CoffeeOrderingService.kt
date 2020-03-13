@@ -6,7 +6,6 @@ package de.kramhal.coffeebutts.web
 import de.kramhal.coffeebutts.infrastructure.EventBus
 import de.kramhal.coffeebutts.model.*
 import de.kramhal.coffeebutts.model.FrontDesk
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import mu.KotlinLogging
@@ -14,10 +13,10 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
 
-@ExperimentalCoroutinesApi
 @RestController
 @RequestMapping("/coffee")
 internal class CoffeeOrderingService(
+        private val eventBus: EventBus,
         private val frontDesk: FrontDesk,
         private val cashierSystem: CashierSystem
 ) {
@@ -31,10 +30,10 @@ internal class CoffeeOrderingService(
     @PostMapping("/orders")
     @ResponseStatus(HttpStatus.CREATED)
     suspend fun placeOrder(@RequestBody order: OrderCoffee): Bill {
-        val listener = EventBus.on<CashierSystem.Invoiced>()
+        val listener = eventBus.on<CashierSystem.Invoiced>()
         val orderId = frontDesk.placeOrder(order.requestedCoffees)
 
-        return listener.consumeAsFlow()
+        return listener
                 .first { it.invoice.orderId == orderId }
                 .let { Bill(it.invoice.orderId) }
     }

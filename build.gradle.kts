@@ -20,6 +20,7 @@ fun versionDetails() = (extra["versionDetails"] as groovy.lang.Closure<*>)() as 
 group = "de.esag.coffeebutts"
 version = versionDetails().version
 java.sourceCompatibility = JavaVersion.VERSION_1_8
+java.targetCompatibility = JavaVersion.VERSION_1_8
 
 val developmentOnly : Configuration by configurations.creating
 configurations {
@@ -39,14 +40,20 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-val compileKotlin: KotlinCompile by tasks
-compileKotlin.kotlinOptions {
-    freeCompilerArgs = listOf("-Xjsr305=strict -XXLanguage:+InlineClasses")
-    jvmTarget = "1.8"
+tasks.withType<KotlinCompile> {
+    kotlinOptions {
+        freeCompilerArgs = freeCompilerArgs + listOf(
+                "-Xjsr305=strict",
+                "-XXLanguage:+InlineClasses",
+                "-Xuse-experimental:+kotlinx.coroutines.ExperimentalCoroutinesApi",
+                "-Xuse-experimental:+kotlinx.coroutines.FlowPreview"
+        )
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
+    }
 }
 
 dependencies {
-    val coroutinesVersion=
+
     //  ---  kotlin
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -74,6 +81,7 @@ dependencies {
     // --- reactive
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
     // implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     testImplementation("io.projectreactor:reactor-test")
 
@@ -82,11 +90,11 @@ dependencies {
     // implementation("org.springframework.data:spring-data-r2dbc:1.0.0.RELEASE")
     // implementation("io.r2dbc:r2dbc-h2:0.8.2.RELEASE")
     // runtimeOnly("com.h2database:h2:1.4.200")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
+    // testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 
     // --- documentation
     // TODO activate as soon, as [springdoc-openapi#159](https://github.com/springdoc/springdoc-openapi/issues/159) is fixed
-     implementation("org.springdoc:springdoc-openapi-webflux-ui:1.2.32")
+    // implementation("org.springdoc:springdoc-openapi-webflux-ui:1.2.32")
 }
 
 springBoot {
