@@ -5,7 +5,6 @@ import de.kramhal.coffeebutts.repositories.OrderRepository
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
@@ -55,7 +54,7 @@ internal class FrontDesk(
     }
 
     private suspend fun markFinished(processed: Barista.Processed) {
-        val order = orderRepository.findById(processed.orderId)
+        val order = orderRepository.findById(processed.order.id)
         order.wasProcessed()
         orderRepository.save(order)
         log.info { "${order.id} is ready for pick up (if not already)." }
@@ -69,16 +68,13 @@ internal class FrontDesk(
             log.info { "order [$orderId] was already delivered." }
             return emptyFlow()
         }
-//        if(!order.isDeliverable()) {
-//            log.info { "Please pay first!" }
-//            return emptyFlow()
-//        }
-        return with(order.coffees) {
-            if(this == null) {
-                log.info { "Barista has not started yet" }
-                return@with emptyFlow<Coffee>()
-            }
-            consumeAsFlow()
+        if(!order.isDeliverable()) {
+            log.info { "Please pay first!" }
+            return emptyFlow()
+        }
+        return order.getCoffees().onCompletion {
+            ordersInProcess.remove(orderId)
+            eventBus.send(Delivered(orderId))
         }
     }
 }
@@ -101,16 +97,14 @@ internal data class Order(
     @Id private val idData = id.id
 
     @Transient
-    var coffees : ReceiveChannel<Coffee>? = null
-    @Transient
-    private val coffs = Channel<Coffee>(requestedCoffees.size)
+    private val coffees = Channel<Coffee>(requestedCoffees.size)
 
     fun wasPaid() { hasBeenPaid = true }
     fun isDeliverable() = hasBeenPaid
 
-    fun wasProcessed() { hasBeenProcessed=true; coffs.close() }
+    fun wasProcessed() { hasBeenProcessed=true; coffees.close() }
 
-    suspend fun addCoffee(coffee: Coffee) = coffs.send(coffee)
+    suspend fun addCoffee(coffee: Coffee) = coffees.send(coffee)
     @FlowPreview
-    fun getCoffees() = coffs.consumeAsFlow()
+    fun getCoffees() = coffees.consumeAsFlow()
 }

@@ -83,25 +83,6 @@ internal class EventBusTest {
         assertEquals(listOf(expected), observer1.finish())
         assertEquals(listOf(expected), observer2.finish())
     }
-
-//    @Test
-//    fun `should receive only events occuring after subscription`() = runBlockingTest {
-//        val publisher = ConflatedBroadcastChannel<Int>()
-//        val values = mutableListOf<Int>()
-//
-//        publisher.offer(1)
-//        publisher.offer(2)
-//
-//        val job = launch {
-//            publisher.openSubscription().consumeEach { values.add(it) }
-//        }
-//
-//        publisher.offer(3)
-//        assertEquals(listOf(3), values)
-//        assertEquals(3, publisher.value)
-//
-//        job.cancel()
-//    }
 }
 
 internal suspend inline fun <reified T : EventBus.Event> EventBus.recordEvents(scope: CoroutineScope) =

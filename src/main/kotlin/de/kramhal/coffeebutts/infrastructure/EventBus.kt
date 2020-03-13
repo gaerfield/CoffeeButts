@@ -27,9 +27,7 @@ internal class EventBus {
 
     final inline fun <reified T : Event> on(
             scope: CoroutineScope = GlobalScope,
-            dispatcher: CoroutineDispatcher = Dispatchers.Main,
-            crossinline action: suspend (value: T) -> Unit) = scope.launch(dispatcher) {
+            crossinline action: suspend (value: T) -> Unit) = scope.launch {
         on<T>().collect(action)
     }
-
 }

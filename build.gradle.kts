@@ -5,7 +5,6 @@ plugins {
     val kotlinVersion = "1.3.61"
     kotlin("jvm") version kotlinVersion
     kotlin("kapt") version kotlinVersion
-    //id("org.jetbrains.kotlin.plugin.jpa") version "1.3.60"
 
     // spring-boot
     kotlin("plugin.spring") version kotlinVersion

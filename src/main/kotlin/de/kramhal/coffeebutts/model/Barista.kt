@@ -16,54 +16,30 @@ internal class Barista(
 ) {
 
     data class Processing(val order: Order) : EventBus.Event
-    data class Processed(val orderId: OrderId) : EventBus.Event
+    data class Processed(val order: Order) : EventBus.Event
 
-    private val log = KotlinLogging.logger {}
-    private val orders = BroadcastChannel<Order>(10)
-
-    init {
-        eventBus.on<FrontDesk.Ordered>().onEach { orders.send(it.order) }
-        GlobalScope.launch { orders.consumeEach { processOrder(it) } }
-    }
-
-    private suspend fun processOrder(order: Order) {
-        // validiere ... genügend Milch?
-        order.coffees = GlobalScope.produce(capacity = order.requestedCoffees.size) {
-            eventBus.send(Processing(order))
-            order.requestedCoffees.forEach {
-                log.info { "${order.id}: Creating $it" }
-                delay(2500)
-                send(Coffee(it))
-            }
-            eventBus.send(Processed(order.id))
-        }
-    }
-}
-
-@Component
-internal class Barista2(
-        private val eventBus: EventBus
-) {
     private val log = KotlinLogging.logger {}
     private final val orders = Channel<Order>(10)
 
     init {
-        eventBus.on<FrontDesk.Ordered>().onEach {
+        eventBus.on<FrontDesk.Ordered> {
             log.info { "Received order for ${it.order.requestedCoffees}" }
             orders.send(it.order)
         }
-        GlobalScope.launch(Dispatchers.IO) { orders.consumeEach { processOrder(it) } }
+        GlobalScope.launch { orders.consumeEach { processOrder(it) } }
     }
 
-    suspend fun processOrder(order: Order) {
-        log.info { "start processing order for ${order.requestedCoffees}" }
+    private suspend fun processOrder(order: Order) {
+        log.info { "start processing order for [${order.id}] = [${order.requestedCoffees}]" }
+        // validiere ... genügend Milch?
+        eventBus.send(Processing(order))
         order.requestedCoffees.forEach {
             delay(2500)
             order.addCoffee(Coffee(it))
             log.info { "finished creating the coffee $it" }
         }
-        log.info { "finished processing the order" }
         order.wasProcessed()
+        log.info { "finished processing the order [${order.id}]" }
+        eventBus.send(Processed(order))
     }
-
 }
